@@ -229,6 +229,15 @@ function EntryTab({ store }: { store: Store }) {
     setQty("");
   };
 
+  const loadDemo = () => {
+    const count = store.seedDemo();
+    if (count === 0) {
+      toast.info("Los productos de prueba ya están cargados.");
+    } else {
+      toast.success(`Se cargaron ${count} productos de prueba con stock y ventas de ejemplo.`);
+    }
+  };
+
   return (
     <div className="grid gap-6 md:grid-cols-2">
       <Card>
@@ -266,6 +275,9 @@ function EntryTab({ store }: { store: Store }) {
           </div>
           <Button onClick={submit} className="w-full">
             {found ? "Agregar al inventario" : "Crear producto"}
+          </Button>
+          <Button variant="outline" onClick={loadDemo} className="w-full">
+            Cargar productos de prueba
           </Button>
         </CardContent>
       </Card>

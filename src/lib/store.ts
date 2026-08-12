@@ -127,6 +127,17 @@ export function rangeStart(range: Range, now = new Date()) {
   return d.getTime();
 }
 
+export const demoProducts: Omit<Product, "id">[] = [
+  { name: "Pan batido", unit: "kilo", barcode: "", keyword: "pa", price: 3900, stock: 5 },
+  { name: "Marraqueta", unit: "kilo", barcode: "", keyword: "m", price: 3600, stock: 4 },
+  { name: "Coca cola 1.5L", unit: "unidad", barcode: "7801610000561", keyword: "", price: 1800, stock: 24 },
+  { name: "Leche 1L", unit: "unidad", barcode: "7802200119121", keyword: "", price: 1200, stock: 36 },
+  { name: "Azúcar 1kg", unit: "unidad", barcode: "7802200001234", keyword: "", price: 1500, stock: 12 },
+  { name: "Manzana", unit: "kilo", barcode: "", keyword: "ma", price: 2500, stock: 3.5 },
+  { name: "Naranja", unit: "kilo", barcode: "", keyword: "n", price: 2200, stock: 4.2 },
+  { name: "Aceite 1L", unit: "unidad", barcode: "7802110000456", keyword: "", price: 2500, stock: 18 },
+];
+
 export function useStore() {
   const [data, setData] = useState<Data>(empty);
   const [ready, setReady] = useState(false);
@@ -208,5 +219,58 @@ export function useStore() {
     [data, save],
   );
 
-  return { data, ready, upsertProduct, removeProduct, addEntry, addSale };
+  const seedDemo = useCallback(() => {
+    let products = [...data.products];
+    let movements = [...data.movements];
+    const created: Product[] = [];
+
+    for (const demo of demoProducts) {
+      const duplicate = products.find(
+        (p) =>
+          (demo.barcode && p.barcode === demo.barcode) ||
+          (demo.keyword && p.keyword?.toLowerCase() === demo.keyword.toLowerCase()),
+      );
+      if (duplicate) continue;
+      const p: Product = { ...demo, id: uid() };
+      products.push(p);
+      created.push(p);
+      // Registrar una entrada inicial con el stock de prueba.
+      movements.unshift({
+        id: uid(),
+        ts: Date.now() - 1000 * 60 * 60,
+        type: "in",
+        productId: p.id,
+        productName: p.name,
+        qty: p.stock,
+        amount: p.stock * p.price,
+        unit: p.unit,
+      });
+    }
+
+    // Agregar algunas ventas de prueba para que los reportes tengan datos.
+    for (const p of created) {
+      const saleCount = p.unit === "kilo" ? 1 : Math.floor(Math.random() * 3) + 1;
+      const qty = p.unit === "kilo" ? Math.min(p.stock * 0.3, 1.5) : saleCount;
+      const amount = qty * p.price;
+      const productIdx = products.findIndex((x) => x.id === p.id);
+      if (productIdx >= 0) {
+        products[productIdx] = { ...products[productIdx]!, stock: Math.max(0, +(products[productIdx]!.stock - qty).toFixed(3)) };
+      }
+      movements.unshift({
+        id: uid(),
+        ts: Date.now() - 1000 * 60 * 15,
+        type: "out",
+        productId: p.id,
+        productName: p.name,
+        qty,
+        amount,
+        unit: p.unit,
+      });
+    }
+
+    save({ products, movements });
+    return created.length;
+  }, [data, save]);
+
+  return { data, ready, upsertProduct, removeProduct, addEntry, addSale, seedDemo };
 }
