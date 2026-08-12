@@ -289,7 +289,7 @@ function ProductForm({
   onDone,
 }: {
   store: Store;
-  prefill?: string;
+  prefill?: string | undefined;
   onDone: () => void;
 }) {
   const [name, setName] = useState("");
@@ -307,19 +307,28 @@ function ProductForm({
   const submit = () => {
     const p = Number(price.replace(",", "."));
     const s = Number((stock || "0").replace(",", "."));
-    if (!name.trim()) return toast.error("Escribe el nombre del producto.");
-    if (!Number.isFinite(p) || p <= 0)
-      return toast.error(unit === "kilo" ? "Ingresa el precio por kilo." : "Ingresa el precio.");
-    if (!effBarcode.trim() && !effKeyword.trim())
-      return toast.error("Necesita un código de barras o una palabra clave.");
+    if (!name.trim()) {
+      toast.error("Escribe el nombre del producto.");
+      return;
+    }
+    if (!Number.isFinite(p) || p <= 0) {
+      toast.error(unit === "kilo" ? "Ingresa el precio por kilo." : "Ingresa el precio.");
+      return;
+    }
+    if (!effBarcode.trim() && !effKeyword.trim()) {
+      toast.error("Necesita un código de barras o una palabra clave.");
+      return;
+    }
     if (
       store.data.products.some(
         (x) =>
           (effBarcode && x.barcode === effBarcode.trim()) ||
           (effKeyword && x.keyword?.toLowerCase() === effKeyword.trim().toLowerCase()),
       )
-    )
-      return toast.error("Ya existe un producto con ese código o palabra clave.");
+    ) {
+      toast.error("Ya existe un producto con ese código o palabra clave.");
+      return;
+    }
 
     store.upsertProduct({
       name: name.trim(),
