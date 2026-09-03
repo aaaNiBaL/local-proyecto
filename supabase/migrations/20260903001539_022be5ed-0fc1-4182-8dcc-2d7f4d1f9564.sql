@@ -1,0 +1,12 @@
+REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.ensure_profile() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.set_user_role(uuid, public.app_role) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.register_sale(uuid, numeric, numeric) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.register_entry(uuid, numeric, date, text) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.register_waste(uuid, numeric, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.ensure_profile() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.set_user_role(uuid, public.app_role) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.register_sale(uuid, numeric, numeric) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.register_entry(uuid, numeric, date, text) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.register_waste(uuid, numeric, text) TO authenticated, service_role;
