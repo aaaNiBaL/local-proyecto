@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedInventariosRouteImport } from './routes/_authenticated/inventarios'
 import { Route as AuthenticatedMovimientosRouteImport } from './routes/_authenticated/movimientos'
+import { Route as AuthenticatedVencimientosRouteImport } from './routes/_authenticated/vencimientos'
 import { Route as AuthenticatedVenderRouteImport } from './routes/_authenticated/vender'
 
 const IndexRoute = IndexRouteImport.update({
@@ -48,6 +49,12 @@ const AuthenticatedMovimientosRoute =
     path: '/movimientos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedVencimientosRoute =
+  AuthenticatedVencimientosRouteImport.update({
+    id: '/vencimientos',
+    path: '/vencimientos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedVenderRoute = AuthenticatedVenderRouteImport.update({
   id: '/vender',
   path: '/vender',
@@ -60,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inventarios': typeof AuthenticatedInventariosRoute
   '/movimientos': typeof AuthenticatedMovimientosRoute
+  '/vencimientos': typeof AuthenticatedVencimientosRoute
   '/vender': typeof AuthenticatedVenderRoute
 }
 export interface FileRoutesByTo {
@@ -68,6 +76,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inventarios': typeof AuthenticatedInventariosRoute
   '/movimientos': typeof AuthenticatedMovimientosRoute
+  '/vencimientos': typeof AuthenticatedVencimientosRoute
   '/vender': typeof AuthenticatedVenderRoute
 }
 export interface FileRoutesById {
@@ -78,14 +87,28 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/inventarios': typeof AuthenticatedInventariosRoute
   '/_authenticated/movimientos': typeof AuthenticatedMovimientosRoute
+  '/_authenticated/vencimientos': typeof AuthenticatedVencimientosRoute
   '/_authenticated/vender': typeof AuthenticatedVenderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/dashboard' | '/inventarios' | '/movimientos' | '/vender'
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/inventarios'
+    | '/movimientos'
+    | '/vencimientos'
+    | '/vender'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/inventarios' | '/movimientos' | '/vender'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/inventarios'
+    | '/movimientos'
+    | '/vencimientos'
+    | '/vender'
   id:
     | '__root__'
     | '/'
@@ -94,6 +117,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/inventarios'
     | '/_authenticated/movimientos'
+    | '/_authenticated/vencimientos'
     | '/_authenticated/vender'
   fileRoutesById: FileRoutesById
 }
@@ -147,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMovimientosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/vencimientos': {
+      id: '/_authenticated/vencimientos'
+      path: '/vencimientos'
+      fullPath: '/vencimientos'
+      preLoaderRoute: typeof AuthenticatedVencimientosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/vender': {
       id: '/_authenticated/vender'
       path: '/vender'
@@ -161,6 +192,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedInventariosRoute: typeof AuthenticatedInventariosRoute
   AuthenticatedMovimientosRoute: typeof AuthenticatedMovimientosRoute
+  AuthenticatedVencimientosRoute: typeof AuthenticatedVencimientosRoute
   AuthenticatedVenderRoute: typeof AuthenticatedVenderRoute
 }
 
@@ -168,6 +200,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedInventariosRoute: AuthenticatedInventariosRoute,
   AuthenticatedMovimientosRoute: AuthenticatedMovimientosRoute,
+  AuthenticatedVencimientosRoute: AuthenticatedVencimientosRoute,
   AuthenticatedVenderRoute: AuthenticatedVenderRoute,
 }
 
