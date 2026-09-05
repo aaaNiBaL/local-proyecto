@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedInventariosRouteImport } from './routes/_authenticated/inventarios'
+import { Route as AuthenticatedMovimientosRouteImport } from './routes/_authenticated/movimientos'
 import { Route as AuthenticatedVenderRouteImport } from './routes/_authenticated/vender'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,12 @@ const AuthenticatedInventariosRoute =
     path: '/inventarios',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMovimientosRoute =
+  AuthenticatedMovimientosRouteImport.update({
+    id: '/movimientos',
+    path: '/movimientos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedVenderRoute = AuthenticatedVenderRouteImport.update({
   id: '/vender',
   path: '/vender',
@@ -52,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inventarios': typeof AuthenticatedInventariosRoute
+  '/movimientos': typeof AuthenticatedMovimientosRoute
   '/vender': typeof AuthenticatedVenderRoute
 }
 export interface FileRoutesByTo {
@@ -59,6 +67,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inventarios': typeof AuthenticatedInventariosRoute
+  '/movimientos': typeof AuthenticatedMovimientosRoute
   '/vender': typeof AuthenticatedVenderRoute
 }
 export interface FileRoutesById {
@@ -68,13 +77,15 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/inventarios': typeof AuthenticatedInventariosRoute
+  '/_authenticated/movimientos': typeof AuthenticatedMovimientosRoute
   '/_authenticated/vender': typeof AuthenticatedVenderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/inventarios' | '/vender'
+  fullPaths:
+    '/' | '/auth' | '/dashboard' | '/inventarios' | '/movimientos' | '/vender'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/inventarios' | '/vender'
+  to: '/' | '/auth' | '/dashboard' | '/inventarios' | '/movimientos' | '/vender'
   id:
     | '__root__'
     | '/'
@@ -82,6 +93,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/dashboard'
     | '/_authenticated/inventarios'
+    | '/_authenticated/movimientos'
     | '/_authenticated/vender'
   fileRoutesById: FileRoutesById
 }
@@ -128,6 +140,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInventariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/movimientos': {
+      id: '/_authenticated/movimientos'
+      path: '/movimientos'
+      fullPath: '/movimientos'
+      preLoaderRoute: typeof AuthenticatedMovimientosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/vender': {
       id: '/_authenticated/vender'
       path: '/vender'
@@ -141,12 +160,14 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedInventariosRoute: typeof AuthenticatedInventariosRoute
+  AuthenticatedMovimientosRoute: typeof AuthenticatedMovimientosRoute
   AuthenticatedVenderRoute: typeof AuthenticatedVenderRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedInventariosRoute: AuthenticatedInventariosRoute,
+  AuthenticatedMovimientosRoute: AuthenticatedMovimientosRoute,
   AuthenticatedVenderRoute: AuthenticatedVenderRoute,
 }
 
