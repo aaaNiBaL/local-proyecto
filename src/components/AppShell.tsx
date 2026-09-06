@@ -79,7 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="border-t px-4 py-3">
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{user.user_metadata?.full_name ?? user.email}</p>
+              <p className="truncate text-sm font-medium">{(user.user_metadata?.['full_name'] as string | undefined) ?? user.email}</p>
               <Badge variant={isAdmin ? "default" : "secondary"} className="mt-0.5 text-[10px] uppercase">
                 {role === "admin" ? "Administrador" : "Cajero"}
               </Badge>
