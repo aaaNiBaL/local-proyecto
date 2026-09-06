@@ -12,9 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedBuscarRouteImport } from './routes/_authenticated/buscar'
+import { Route as AuthenticatedConfiguracionRouteImport } from './routes/_authenticated/configuracion'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedInventariosRouteImport } from './routes/_authenticated/inventarios'
 import { Route as AuthenticatedMovimientosRouteImport } from './routes/_authenticated/movimientos'
+import { Route as AuthenticatedReportesRouteImport } from './routes/_authenticated/reportes'
 import { Route as AuthenticatedVencimientosRouteImport } from './routes/_authenticated/vencimientos'
 import { Route as AuthenticatedVenderRouteImport } from './routes/_authenticated/vender'
 
@@ -32,6 +35,17 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedBuscarRoute = AuthenticatedBuscarRouteImport.update({
+  id: '/buscar',
+  path: '/buscar',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedConfiguracionRoute =
+  AuthenticatedConfiguracionRouteImport.update({
+    id: '/configuracion',
+    path: '/configuracion',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -49,6 +63,11 @@ const AuthenticatedMovimientosRoute =
     path: '/movimientos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportesRoute = AuthenticatedReportesRouteImport.update({
+  id: '/reportes',
+  path: '/reportes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedVencimientosRoute =
   AuthenticatedVencimientosRouteImport.update({
     id: '/vencimientos',
@@ -64,18 +83,24 @@ const AuthenticatedVenderRoute = AuthenticatedVenderRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/buscar': typeof AuthenticatedBuscarRoute
+  '/configuracion': typeof AuthenticatedConfiguracionRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inventarios': typeof AuthenticatedInventariosRoute
   '/movimientos': typeof AuthenticatedMovimientosRoute
+  '/reportes': typeof AuthenticatedReportesRoute
   '/vencimientos': typeof AuthenticatedVencimientosRoute
   '/vender': typeof AuthenticatedVenderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/buscar': typeof AuthenticatedBuscarRoute
+  '/configuracion': typeof AuthenticatedConfiguracionRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inventarios': typeof AuthenticatedInventariosRoute
   '/movimientos': typeof AuthenticatedMovimientosRoute
+  '/reportes': typeof AuthenticatedReportesRoute
   '/vencimientos': typeof AuthenticatedVencimientosRoute
   '/vender': typeof AuthenticatedVenderRoute
 }
@@ -84,9 +109,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/buscar': typeof AuthenticatedBuscarRoute
+  '/_authenticated/configuracion': typeof AuthenticatedConfiguracionRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/inventarios': typeof AuthenticatedInventariosRoute
   '/_authenticated/movimientos': typeof AuthenticatedMovimientosRoute
+  '/_authenticated/reportes': typeof AuthenticatedReportesRoute
   '/_authenticated/vencimientos': typeof AuthenticatedVencimientosRoute
   '/_authenticated/vender': typeof AuthenticatedVenderRoute
 }
@@ -95,18 +123,24 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/buscar'
+    | '/configuracion'
     | '/dashboard'
     | '/inventarios'
     | '/movimientos'
+    | '/reportes'
     | '/vencimientos'
     | '/vender'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/buscar'
+    | '/configuracion'
     | '/dashboard'
     | '/inventarios'
     | '/movimientos'
+    | '/reportes'
     | '/vencimientos'
     | '/vender'
   id:
@@ -114,9 +148,12 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/buscar'
+    | '/_authenticated/configuracion'
     | '/_authenticated/dashboard'
     | '/_authenticated/inventarios'
     | '/_authenticated/movimientos'
+    | '/_authenticated/reportes'
     | '/_authenticated/vencimientos'
     | '/_authenticated/vender'
   fileRoutesById: FileRoutesById
@@ -150,6 +187,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/buscar': {
+      id: '/_authenticated/buscar'
+      path: '/buscar'
+      fullPath: '/buscar'
+      preLoaderRoute: typeof AuthenticatedBuscarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/configuracion': {
+      id: '/_authenticated/configuracion'
+      path: '/configuracion'
+      fullPath: '/configuracion'
+      preLoaderRoute: typeof AuthenticatedConfiguracionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -171,6 +222,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMovimientosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reportes': {
+      id: '/_authenticated/reportes'
+      path: '/reportes'
+      fullPath: '/reportes'
+      preLoaderRoute: typeof AuthenticatedReportesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/vencimientos': {
       id: '/_authenticated/vencimientos'
       path: '/vencimientos'
@@ -189,17 +247,23 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBuscarRoute: typeof AuthenticatedBuscarRoute
+  AuthenticatedConfiguracionRoute: typeof AuthenticatedConfiguracionRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedInventariosRoute: typeof AuthenticatedInventariosRoute
   AuthenticatedMovimientosRoute: typeof AuthenticatedMovimientosRoute
+  AuthenticatedReportesRoute: typeof AuthenticatedReportesRoute
   AuthenticatedVencimientosRoute: typeof AuthenticatedVencimientosRoute
   AuthenticatedVenderRoute: typeof AuthenticatedVenderRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBuscarRoute: AuthenticatedBuscarRoute,
+  AuthenticatedConfiguracionRoute: AuthenticatedConfiguracionRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedInventariosRoute: AuthenticatedInventariosRoute,
   AuthenticatedMovimientosRoute: AuthenticatedMovimientosRoute,
+  AuthenticatedReportesRoute: AuthenticatedReportesRoute,
   AuthenticatedVencimientosRoute: AuthenticatedVencimientosRoute,
   AuthenticatedVenderRoute: AuthenticatedVenderRoute,
 }
