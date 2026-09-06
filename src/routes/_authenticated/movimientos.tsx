@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { PackagePlus, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { categoriesQuery, movementsQuery, productsQuery, qk } from "@/lib/queries";
-import { findByCode, fmtDate, fmtDateTime, money, num, qtyLabel } from "@/lib/inventory";
+import { findByCode, fmtDateTime, money, num, qtyLabel } from "@/lib/inventory";
 import { AdminOnly } from "@/components/AppShell";
 import { ProductForm } from "@/components/ProductForm";
 import { Button } from "@/components/ui/button";
@@ -50,8 +50,8 @@ function EntriesPage() {
       const { error } = await supabase.rpc("register_entry", {
         _product_id: found.id,
         _qty: n,
-        _expires_at: expires || undefined,
-        _note: note.trim() || undefined,
+        ...(expires ? { _expires_at: expires } : {}),
+        ...(note.trim() ? { _note: note.trim() } : {}),
       });
       if (error) throw new Error(error.message);
       return { name: found.name, n, unit: found.unit };
@@ -111,7 +111,7 @@ function EntriesPage() {
         await supabase.rpc("register_entry", {
           _product_id: data.id,
           _qty: r.stock,
-          _expires_at: r.exp ?? undefined,
+          ...(r.exp ? { _expires_at: r.exp } : {}),
           _note: "Carga de prueba",
         });
         const saleQty = r.unit === "kilo" ? 1.2 : 2;
@@ -243,7 +243,6 @@ function EntriesPage() {
           setQty("");
         }}
       />
-      <span className="hidden">{fmtDate(new Date())}</span>
     </div>
   );
 }

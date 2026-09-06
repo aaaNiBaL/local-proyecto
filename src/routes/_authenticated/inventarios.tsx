@@ -200,7 +200,7 @@ function InventoryPage() {
         </CardContent>
       </Card>
 
-      <ProductForm open={form.open} onOpenChange={(o) => setForm((s) => ({ ...s, open: o }))} product={form.product} />
+      <ProductForm open={form.open} onOpenChange={(o) => setForm((s) => ({ ...s, open: o }))} product={form.product ?? null} />
     </div>
   );
 }
