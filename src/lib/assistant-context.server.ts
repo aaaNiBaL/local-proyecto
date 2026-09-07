@@ -89,9 +89,9 @@ export async function buildBusinessSnapshot(supabase: ReturnType<typeof userClie
   lines.push(`Catálogo: ${ps.length} productos en ${cats.size} categorías. Valor de inventario a costo: ${clp(inventoryValue)}.`);
   lines.push(`Ventas HOY: ${salesToday.length} transacciones, ${clp(sum(salesToday, (m) => Number(m.amount ?? 0)))}.`);
   lines.push(
-    `Ventas últimos 7 días: ${sales7.length} transacciones, ${clp(sum(sales7, (m) => Number(m.amount ?? 0)))}; costo ${clp(sum(sales7, (m) => Number(m.cost ?? 0)))}.`,
+    `Ventas últimos 7 días: ${sales7.length} transacciones, ${clp(sum(sales7, (m) => Number(m.amount ?? 0)))}; costo ${clp(sum(sales7, (m) => Number(m.cost_amount ?? 0)))}.`,
   );
-  lines.push(`Mermas últimos 30 días: ${waste30.length} registros, ${clp(sum(waste30, (m) => Number(m.cost ?? 0)))}.`);
+  lines.push(`Mermas últimos 30 días: ${waste30.length} registros, ${clp(sum(waste30, (m) => Number(m.cost_amount ?? 0)))}.`);
   lines.push("", "Top productos por venta (7 días):", ...(top.length ? top : ["- (sin ventas)"]));
   lines.push(
     "",
