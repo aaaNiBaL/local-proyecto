@@ -298,6 +298,15 @@ export type Database = {
         }
         Returns: string
       }
+      register_return: {
+        Args: {
+          _amount: number
+          _note?: string
+          _product_id: string
+          _qty: number
+        }
+        Returns: string
+      }
       register_sale: {
         Args: { _amount: number; _product_id: string; _qty: number }
         Returns: string
