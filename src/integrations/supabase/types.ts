@@ -220,21 +220,33 @@ export type Database = {
         Row: {
           address: string
           city: string
+          daily_report_enabled: boolean
+          daily_report_hour: number
           id: number
+          last_report_on: string | null
+          owner_whatsapp: string
           store_name: string
           updated_at: string
         }
         Insert: {
           address?: string
           city?: string
+          daily_report_enabled?: boolean
+          daily_report_hour?: number
           id?: number
+          last_report_on?: string | null
+          owner_whatsapp?: string
           store_name?: string
           updated_at?: string
         }
         Update: {
           address?: string
           city?: string
+          daily_report_enabled?: boolean
+          daily_report_hour?: number
           id?: number
+          last_report_on?: string | null
+          owner_whatsapp?: string
           store_name?: string
           updated_at?: string
         }
@@ -304,7 +316,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "cajero"
-      movement_type: "in" | "out" | "merma"
+      movement_type: "in" | "out" | "merma" | "devolucion"
       product_nature: "consumible" | "empaque" | "herramienta" | "repuesto"
       product_unit: "unidad" | "kilo"
     }
@@ -435,7 +447,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "cajero"],
-      movement_type: ["in", "out", "merma"],
+      movement_type: ["in", "out", "merma", "devolucion"],
       product_nature: ["consumible", "empaque", "herramienta", "repuesto"],
       product_unit: ["unidad", "kilo"],
     },
