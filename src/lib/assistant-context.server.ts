@@ -51,7 +51,7 @@ export async function buildBusinessSnapshot(supabase: ReturnType<typeof userClie
   const todayKey = now.toLocaleDateString("es-CL", { timeZone: "America/Santiago" });
   const isToday = (ts: string) => new Date(ts).toLocaleDateString("es-CL", { timeZone: "America/Santiago" }) === todayKey;
 
-  const sales = mv.filter((m) => m.type === "venta");
+  const sales = mv.filter((m) => m.type === "out");
   const salesToday = sales.filter((m) => isToday(m.ts));
   const sales7 = sales.filter((m) => new Date(m.ts) >= from7);
   const sum = (arr: typeof mv, f: (m: (typeof mv)[number]) => number) => arr.reduce((a, m) => a + f(m), 0);
