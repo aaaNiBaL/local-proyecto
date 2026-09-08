@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
+import { AssistantBubble } from "@/components/AssistantBubble";
 import type { AppRole } from "@/lib/inventory";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/_authenticated")({
   component: () => (
     <AppShell>
       <Outlet />
+      <AssistantBubble />
     </AppShell>
   ),
 });
