@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
-import { createLovableAiGatewayProvider, getLovableAiGatewayRunId } from "@/lib/ai-gateway.server";
 import { buildBusinessSnapshot, userClient } from "@/lib/assistant-context.server";
 
 export const Route = createFileRoute("/api/chat")({
@@ -13,8 +13,8 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("No autorizado", { status: 401 });
         }
 
-        const key = process.env["LOVABLE_API_KEY"];
-        if (!key) return new Response("Falta la configuración de IA", { status: 500 });
+        const key = process.env["GOOGLE_GENERATIVE_AI_API_KEY"];
+        if (!key) return new Response("Falta GOOGLE_GENERATIVE_AI_API_KEY", { status: 500 });
 
         let messages: UIMessage[];
         try {
@@ -54,11 +54,11 @@ export const Route = createFileRoute("/api/chat")({
           snapshot,
         ].join("\n");
 
-        const gateway = createLovableAiGatewayProvider(key, getLovableAiGatewayRunId(request));
+        const google = createGoogleGenerativeAI({ apiKey: key });
 
         try {
           const result = streamText({
-            model: gateway("google/gemini-3.7-flash"),
+            model: google("gemini-3.7-flash"),
             system,
             messages: await convertToModelMessages(messages),
           });
