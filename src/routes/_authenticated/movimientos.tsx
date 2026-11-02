@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { PackagePlus, Sparkles } from "lucide-react";
+import { Download, PackagePlus, Sparkles } from "lucide-react";
+import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { categoriesQuery, movementsQuery, productsQuery, qk } from "@/lib/queries";
 import { findByCode, fmtDateTime, money, num, qtyLabel } from "@/lib/inventory";
@@ -133,14 +134,35 @@ function EntriesPage() {
 
   const entries = movements.filter((m) => m.type === "in").slice(0, 20);
 
+  const exportMovements = () => {
+    const rows = movements.map((m) => ({
+      Fecha: m.ts ? new Date(m.ts).toLocaleString("es-CL") : "",
+      Tipo: m.type === "in" ? "Entrada" : "Salida",
+      Producto: m.product_name,
+      Cantidad: Number(m.qty),
+      Unidad: m.unit,
+      Nota: m.note ?? "",
+      Monto: Number(m.amount ?? m.cost_amount ?? 0),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Movimientos");
+    XLSX.writeFile(workbook, "movimientos.xlsx");
+    toast.success("Excel exportado");
+  };
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-6">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2">
               <PackagePlus className="size-4" /> Recepción de mercadería
             </CardTitle>
+            <Button variant="outline" size="sm" onClick={exportMovements}>
+              <Download className="size-4" /> Exportar Excel
+            </Button>
           </CardHeader>
           <CardContent>
             <form

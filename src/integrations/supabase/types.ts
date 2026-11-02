@@ -195,6 +195,53 @@ export type Database = {
           },
         ]
       }
+      promotions: {
+        Row: {
+          active: boolean
+          bundle_price: number | null
+          bundle_qty: number | null
+          created_at: string
+          description: string | null
+          id: string
+          product_id: string
+          promo_price: number | null
+          promo_type: string
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          bundle_price?: number | null
+          bundle_qty?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          product_id: string
+          promo_price?: number | null
+          promo_type: string
+          title: string
+        }
+        Update: {
+          active?: boolean
+          bundle_price?: number | null
+          bundle_qty?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          product_id?: string
+          promo_price?: number | null
+          promo_type?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -308,7 +355,9 @@ export type Database = {
         Returns: string
       }
       register_sale: {
-        Args: { _amount: number; _product_id: string; _qty: number }
+        Args:
+          | { _items: Json; _note?: string | null }
+          | { _amount: number; _product_id: string; _qty: number }
         Returns: string
       }
       register_waste: {

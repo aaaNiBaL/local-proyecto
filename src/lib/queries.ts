@@ -1,9 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Category, Lot, Movement, Product, Profile, Settings } from "./inventory";
+import type { Category, Lot, Movement, Product, Profile, Promotion, Settings } from "./inventory";
 
 export const qk = {
   products: ["products"] as const,
+  promotions: ["promotions"] as const,
   categories: ["categories"] as const,
   lots: ["lots"] as const,
   movements: (days: number) => ["movements", days] as const,
@@ -20,6 +21,12 @@ export const productsQuery = queryOptions({
   queryKey: qk.products,
   queryFn: async (): Promise<Product[]> =>
     unwrap(await supabase.from("products").select("*").order("name")),
+});
+
+export const promotionsQuery = queryOptions({
+  queryKey: qk.promotions,
+  queryFn: async (): Promise<Promotion[]> =>
+    unwrap(await supabase.from("promotions").select("*").eq("active", true).order("created_at")),
 });
 
 export const categoriesQuery = queryOptions({

@@ -66,7 +66,13 @@ export function AssistantBubble() {
     id: "invenco-asistente",
     messages: initial,
     transport,
-    onError: (error) => toast.error(error.message || "El asistente no pudo responder."),
+    onError: (error) => {
+      const raw = String(error.message || "");
+      const friendly = /agotado|cuota|quota|rate limit|429|temporalm/i.test(raw)
+        ? "Maxi está temporalmente sin disponibilidad por cuota de Gemini. Inténtalo en unos segundos."
+        : raw || "El asistente no pudo responder.";
+      toast.error(friendly);
+    },
   });
 
   const busy = status === "submitted" || status === "streaming";

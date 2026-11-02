@@ -55,16 +55,23 @@ export const Route = createFileRoute("/api/chat")({
         ].join("\n");
 
         const google = createGoogleGenerativeAI({ apiKey: key });
+        const env = process.env as Record<string, string | undefined>;
+        const modelName = env["GEMINI_MODEL"] ?? "gemini-3.8-flash";
 
         try {
           const result = streamText({
-            model: google("gemini-3.7-flash"),
+            model: google(modelName),
             system,
             messages: await convertToModelMessages(messages),
           });
           return result.toUIMessageStreamResponse({ originalMessages: messages });
         } catch (e) {
-          return new Response(e instanceof Error ? e.message : "Error de IA", { status: 500 });
+          const message = e instanceof Error ? e.message : "Error de IA";
+          const status = /429|quota|RESOURCE_EXHAUSTED|rate limit/i.test(message) ? 429 : 500;
+          const friendly = /429|quota|RESOURCE_EXHAUSTED|rate limit/i.test(message)
+            ? "El asistente de Gemini está temporalmente agotado por cuota. Intenta de nuevo en unos segundos."
+            : message;
+          return new Response(friendly, { status });
         }
       },
     },

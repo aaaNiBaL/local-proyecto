@@ -1,7 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CalendarClock, Package, Tags } from "lucide-react";
+import { AlertTriangle, CalendarClock, Download, FileText, Package, Tags } from "lucide-react";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { categoriesQuery, lotsQuery, movementsQuery, productsQuery } from "@/lib/queries";
 import { daysUntil, expiryStatus, fmtDate, money, pct, previousRange, qtyLabel, rangeStart } from "@/lib/inventory";
 import { Kpi } from "@/components/AppShell";
@@ -43,8 +46,58 @@ function Dashboard() {
 
   const productName = (id: string) => products.find((p) => p.id === id)?.name ?? "—";
 
+  const exportDashboardExcel = () => {
+    const rows = stats.low.map((p) => ({
+      Producto: p.name,
+      Stock: Number(p.stock),
+      Minimo: Number(p.min_stock),
+      Precio: Number(p.price),
+      Categoria: categories.find((c) => c.id === p.category_id)?.name ?? "—",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Reposicion");
+    XLSX.writeFile(workbook, "dashboard-reposicion.xlsx");
+  };
+
+  const exportDailyPdf = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Cierre diario", 14, 18);
+    doc.setFontSize(10);
+    doc.text(`Ventas: ${money(stats.tTotal)} · ${stats.tCount} ventas`, 14, 30);
+    doc.text(`Cambio vs ayer: ${pct(stats.change)}`, 14, 37);
+
+    autoTable(doc, {
+      startY: 46,
+      head: [["Producto", "Stock", "Mínimo"]],
+      body: stats.low.slice(0, 10).map((p) => [p.name, qtyLabel(Number(p.stock), p.unit), qtyLabel(Number(p.min_stock), p.unit)]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [25, 118, 210] },
+    });
+
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 10,
+      head: [["Lote", "Vence", "Estado"]],
+      body: stats.expiring.slice(0, 10).map((l) => [productName(l.product_id), l.expires_at ? fmtDate(l.expires_at) : "—", expiryStatus(l.expires_at)]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [220, 53, 69] },
+    });
+
+    doc.save("cierre-diario.pdf");
+  };
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={exportDashboardExcel}>
+          <Download className="size-4" /> Excel
+        </Button>
+        <Button variant="outline" onClick={exportDailyPdf}>
+          <FileText className="size-4" /> PDF diario
+        </Button>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi
           label="Ventas de hoy"

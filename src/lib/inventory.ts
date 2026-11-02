@@ -3,6 +3,7 @@ import type { Database, Tables } from "@/integrations/supabase/types";
 export type Product = Tables<"products">;
 export type Lot = Tables<"lots">;
 export type Movement = Tables<"movements">;
+export type Promotion = Tables<"promotions">;
 export type Category = Tables<"categories">;
 export type Settings = Tables<"settings">;
 export type Profile = Tables<"profiles">;

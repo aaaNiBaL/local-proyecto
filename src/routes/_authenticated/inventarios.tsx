@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Download, Pencil, Plus, Trash2 } from "lucide-react";
+import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { categoriesQuery, productsQuery, qk } from "@/lib/queries";
 import { money, NATURES, natureLabel, qtyLabel, type Product } from "@/lib/inventory";
@@ -57,6 +58,27 @@ function InventoryPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const exportInventory = () => {
+    const rows = list.map((p) => ({
+      Producto: p.name,
+      Codigo: p.code ?? "",
+      Categoria: catName(p.category_id),
+      Naturaleza: natureLabel(p.nature),
+      Precio: Number(p.price),
+      Stock: Number(p.stock),
+      Minimo: Number(p.min_stock),
+      Unidad: p.unit,
+      Activo: p.active ? "Sí" : "No",
+      "Valor total": Number(p.stock) * Number(p.price),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+    XLSX.writeFile(workbook, "inventario.xlsx");
+    toast.success("Excel exportado");
+  };
 
   const catName = (id: string | null) => categories.find((c) => c.id === id)?.name ?? "—";
   const lowCount = products.filter((p) => Number(p.stock) <= Number(p.min_stock)).length;
@@ -117,8 +139,11 @@ function InventoryPage() {
               <SelectItem value="out">Agotado</SelectItem>
             </SelectContent>
           </Select>
+          <Button className="ml-auto" variant="outline" onClick={exportInventory}>
+            <Download className="size-4" /> Exportar Excel
+          </Button>
           {isAdmin && (
-            <Button className="ml-auto" onClick={() => setForm({ open: true, product: null })}>
+            <Button onClick={() => setForm({ open: true, product: null })}>
               <Plus className="size-4" /> Nuevo producto
             </Button>
           )}
