@@ -58,6 +58,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^18.0.4",
     "embla-carousel-react": "^8.6.0",
+    "html5-qrcode": "^2.3.8",
     "input-otp": "^1.4.2",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
@@ -79,6 +80,7 @@
     "vaul": "^1.1.2",
     "vite-tsconfig-paths": "^6.0.2",
     "xlsx": "^0.18.5",
+    "xlsx-js-style": "^1.2.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {

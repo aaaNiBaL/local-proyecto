@@ -38,6 +38,9 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const migrationMissing = error.message.startsWith(
+    "La base de datos aún no tiene los permisos nuevos.",
+  );
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -46,7 +49,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           This page didn't load
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          {migrationMissing
+            ? error.message
+            : "Something went wrong on our end. You can try refreshing or head back home."}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -88,7 +93,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/991956.png", type: "image/png" },
+      { rel: "icon", href: "/favicon.svg?v=2", type: "image/svg+xml" },
     ],
   }),
   shellComponent: RootShell,
@@ -123,7 +128,6 @@ function RootComponent() {
     });
     return () => data.subscription.unsubscribe();
   }, [router, queryClient]);
-
 
   return (
     <QueryClientProvider client={queryClient}>

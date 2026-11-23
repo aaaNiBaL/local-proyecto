@@ -15,14 +15,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Props = {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   product?: Product | null;
   /** Código escaneado para prellenar al crear */
-  initialCode?: string;
+  initialCode?: string | undefined;
+  hideInitialStock?: boolean;
   onSaved?: (p: Product) => void;
 };
 
@@ -35,6 +42,8 @@ type FormState = {
   unit: Unit;
   price: string;
   cost: string;
+  supplier: string;
+  location: string;
   stock: string;
   min_stock: string;
 };
@@ -48,11 +57,20 @@ const blank = (code = ""): FormState => ({
   unit: "unidad",
   price: "",
   cost: "",
+  supplier: "",
+  location: "",
   stock: "0",
   min_stock: "0",
 });
 
-export function ProductForm({ open, onOpenChange, product, initialCode, onSaved }: Props) {
+export function ProductForm({
+  open,
+  onOpenChange,
+  product,
+  initialCode,
+  hideInitialStock = false,
+  onSaved,
+}: Props) {
   const qc = useQueryClient();
   const { data: categories = [] } = useQuery(categoriesQuery);
   const [f, setF] = useState<FormState>(blank());
@@ -69,6 +87,8 @@ export function ProductForm({ open, onOpenChange, product, initialCode, onSaved 
         unit: product.unit,
         price: String(product.price),
         cost: String(product.cost),
+        supplier: product.supplier ?? "",
+        location: product.location ?? "",
         stock: String(product.stock),
         min_stock: String(product.min_stock),
       });
@@ -80,9 +100,35 @@ export function ProductForm({ open, onOpenChange, product, initialCode, onSaved 
   const save = useMutation({
     mutationFn: async () => {
       if (!f.name.trim()) throw new Error("El nombre es obligatorio.");
-      if (!f.code.trim() && !f.keyword.trim()) throw new Error("Ingresa un código o una palabra clave.");
+      if (!f.code.trim() && !f.keyword.trim())
+        throw new Error("Ingresa un código o una palabra clave.");
       const price = num(f.price);
       if (!Number.isFinite(price) || price <= 0) throw new Error("Precio inválido.");
+      const cost = f.cost.trim() ? num(f.cost) : 0;
+      if (!Number.isFinite(cost) || cost < 0)
+        throw new Error("El costo de compra debe ser un monto válido.");
+      const minStock = f.min_stock.trim() ? num(f.min_stock) : 0;
+      if (!Number.isFinite(minStock) || minStock < 0)
+        throw new Error("El stock mínimo no puede ser negativo.");
+
+      // VALIDACIÓN DE DUPLICADOS (código y palabra clave)
+      const code = f.code.trim();
+      const keyword = f.keyword.trim().toLowerCase();
+      if (code) {
+        const dup = await findDuplicate("code", code, product?.id);
+        if (dup)
+          throw new Error(
+            `Ya existe un producto con el código ${code}: "${dup.name}". Revisa el código o edítalo directamente.`,
+          );
+      }
+      if (keyword) {
+        const dupKw = await findDuplicate("keyword", keyword, product?.id);
+        if (dupKw)
+          throw new Error(
+            `La palabra clave "${keyword}" ya la usa el producto "${dupKw.name}". Usa otra (ej: 2 letras).`,
+          );
+      }
+
       const payload = {
         code: f.code.trim() || null,
         keyword: f.keyword.trim().toLowerCase() || null,
@@ -91,11 +137,18 @@ export function ProductForm({ open, onOpenChange, product, initialCode, onSaved 
         category_id: f.category_id || null,
         unit: f.unit,
         price,
-        cost: Number.isFinite(num(f.cost)) ? num(f.cost) : 0,
-        min_stock: Number.isFinite(num(f.min_stock)) ? num(f.min_stock) : 0,
+        cost,
+        supplier: f.supplier.trim() || null,
+        location: f.location.trim() || null,
+        min_stock: minStock,
       };
       if (product) {
-        const { data, error } = await supabase.from("products").update(payload).eq("id", product.id).select().single();
+        const { data, error } = await supabase
+          .from("products")
+          .update(payload)
+          .eq("id", product.id)
+          .select()
+          .single();
         if (error) throw new Error(error.message);
         return data;
       }
@@ -116,12 +169,23 @@ export function ProductForm({ open, onOpenChange, product, initialCode, onSaved 
       qc.invalidateQueries({ queryKey: qk.products });
       qc.invalidateQueries({ queryKey: qk.lots });
       qc.invalidateQueries({ queryKey: ["movements"] });
-      toast.success(product ? "Producto actualizado" : `Producto creado: ${p.name}`);
+      qc.invalidateQueries({ queryKey: qk.inventoryStockAudit });
+      toast.success(
+        product
+          ? `CAMBIOS GUARDADOS: ${p.name}`
+          : `PRODUCTO REGISTRADO: ${p.name}`,
+      );
       onOpenChange(false);
       onSaved?.(p);
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const purchaseCost = num(f.cost);
+  const margin =
+    f.price.trim() && f.cost.trim() && num(f.price) > 0
+      ? ((num(f.price) - purchaseCost) / num(f.price)) * 100
+      : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -129,7 +193,8 @@ export function ProductForm({ open, onOpenChange, product, initialCode, onSaved 
         <DialogHeader>
           <DialogTitle>{product ? "Editar producto" : "Nuevo producto"}</DialogTitle>
           <DialogDescription>
-            Usa código de barras para productos envasados o una palabra clave corta para granel (pan, frutas).
+            Usa código de barras para productos envasados o una palabra clave corta para granel
+            (pan, frutas).
           </DialogDescription>
         </DialogHeader>
         <form
@@ -142,16 +207,29 @@ export function ProductForm({ open, onOpenChange, product, initialCode, onSaved 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Código (barras o interno)</Label>
-              <Input value={f.code} onChange={(e) => set("code", e.target.value)} placeholder="7801234567890" />
+              <Input
+                value={f.code}
+                onChange={(e) => set("code", e.target.value)}
+                placeholder="7801234567890"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Palabra clave</Label>
-              <Input value={f.keyword} onChange={(e) => set("keyword", e.target.value)} placeholder="p, pa, m…" />
+              <Input
+                value={f.keyword}
+                onChange={(e) => set("keyword", e.target.value)}
+                placeholder="p, pa, m…"
+              />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label>Nombre descriptivo</Label>
-            <Input value={f.name} onChange={(e) => set("name", e.target.value)} placeholder="Pan batido" required />
+            <Input
+              value={f.name}
+              onChange={(e) => set("name", e.target.value)}
+              placeholder="Pan batido"
+              required
+            />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -171,7 +249,10 @@ export function ProductForm({ open, onOpenChange, product, initialCode, onSaved 
             </div>
             <div className="space-y-1.5">
               <Label>Categoría</Label>
-              <Select value={f.category_id || "none"} onValueChange={(v) => set("category_id", v === "none" ? "" : v)}>
+              <Select
+                value={f.category_id || "none"}
+                onValueChange={(v) => set("category_id", v === "none" ? "" : v)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Sin categoría" />
                 </SelectTrigger>
@@ -201,23 +282,75 @@ export function ProductForm({ open, onOpenChange, product, initialCode, onSaved 
             </div>
             <div className="space-y-1.5">
               <Label>Precio venta {f.unit === "kilo" ? "por kilo" : "unitario"}</Label>
-              <Input inputMode="decimal" value={f.price} onChange={(e) => set("price", e.target.value)} required />
+              <Input
+                inputMode="decimal"
+                value={f.price}
+                onChange={(e) => set("price", e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-1.5">
-              <Label>Costo reposición</Label>
-              <Input inputMode="decimal" value={f.cost} onChange={(e) => set("cost", e.target.value)} placeholder="0" />
+              <Label>Costo de compra</Label>
+              <Input
+                inputMode="decimal"
+                value={f.cost}
+                onChange={(e) => set("cost", e.target.value)}
+                placeholder="0"
+              />
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            {!product && (
+            <div className="space-y-1.5">
+              <Label>Proveedor</Label>
+              <Input
+                value={f.supplier}
+                onChange={(e) => set("supplier", e.target.value)}
+                placeholder="Nombre del proveedor"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Ubicación del producto</Label>
+              <Input
+                value={f.location}
+                onChange={(e) => set("location", e.target.value)}
+                placeholder="Ej: góndola 2, estante A"
+              />
+            </div>
+          </div>
+          <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+            <span className="font-medium">Margen de ganancia estimado: </span>
+            {margin === null ? (
+              <span className="text-muted-foreground">completa el precio y costo de compra</span>
+            ) : (
+              <span>
+                {(num(f.price) - purchaseCost).toLocaleString("es-CL", {
+                  style: "currency",
+                  currency: "CLP",
+                  maximumFractionDigits: 0,
+                })}
+                {" · "}
+                {margin.toFixed(1)}%
+              </span>
+            )}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {!product && !hideInitialStock && (
               <div className="space-y-1.5">
                 <Label>Stock inicial ({f.unit === "kilo" ? "kg" : "un"})</Label>
-                <Input inputMode="decimal" value={f.stock} onChange={(e) => set("stock", e.target.value)} />
+                <Input
+                  inputMode="decimal"
+                  value={f.stock}
+                  onChange={(e) => set("stock", e.target.value)}
+                />
               </div>
             )}
             <div className="space-y-1.5">
               <Label>Stock mínimo (alerta)</Label>
-              <Input inputMode="decimal" value={f.min_stock} onChange={(e) => set("min_stock", e.target.value)} />
+              <Input
+                inputMode="decimal"
+                value={f.min_stock}
+                onChange={(e) => set("min_stock", e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
@@ -236,6 +369,20 @@ export function ProductForm({ open, onOpenChange, product, initialCode, onSaved 
 
 function friendly(msg: string) {
   if (/products_code_uq/.test(msg)) return "Ya existe un producto con ese código.";
-  if (/products_keyword_uq/.test(msg)) return "Ya existe un producto con esa palabra clave. Usa 2 letras (ej: pa).";
+  if (/products_keyword_uq/.test(msg))
+    return "Ya existe un producto con esa palabra clave. Usa 2 letras (ej: pa).";
   return msg;
+}
+
+/** Busca si otro producto ya usa el mismo código o palabra clave. */
+async function findDuplicate(
+  field: "code" | "keyword",
+  value: string,
+  excludeId?: string,
+): Promise<{ id: string; name: string } | null> {
+  let q = supabase.from("products").select("id, name").eq(field, value).limit(1);
+  if (excludeId) q = q.neq("id", excludeId);
+  const { data, error } = await q.maybeSingle<{ id: string; name: string }>();
+  if (error) return null;
+  return data ?? null;
 }

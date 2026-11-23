@@ -4,6 +4,9 @@ export type Product = Tables<"products">;
 export type Lot = Tables<"lots">;
 export type Movement = Tables<"movements">;
 export type Promotion = Tables<"promotions">;
+export type InventoryAdjustment = Tables<"inventory_adjustments">;
+export type InventoryStockAudit = Tables<"inventory_stock_audit">;
+export type SalePayment = Tables<"sale_payments">;
 export type Category = Tables<"categories">;
 export type Settings = Tables<"settings">;
 export type Profile = Tables<"profiles">;
@@ -12,7 +15,11 @@ export type Unit = Database["public"]["Enums"]["product_unit"];
 export type Nature = Database["public"]["Enums"]["product_nature"];
 
 export const NATURES: { value: Nature; label: string; hint: string }[] = [
-  { value: "consumible", label: "Consumible / Venta directa", hint: "Abarrotes, bebidas, panadería…" },
+  {
+    value: "consumible",
+    label: "Consumible / Venta directa",
+    hint: "Abarrotes, bebidas, panadería…",
+  },
   { value: "empaque", label: "Empaques / Insumos", hint: "Bolsas, cajas de embalaje" },
   { value: "herramienta", label: "Herramientas", hint: "Equipamiento del local" },
   { value: "repuesto", label: "Repuestos / Mantenimiento", hint: "Elementos de reparación" },
@@ -21,9 +28,11 @@ export const NATURES: { value: Nature; label: string; hint: string }[] = [
 export const natureLabel = (n: Nature) => NATURES.find((x) => x.value === n)?.label ?? n;
 
 export const money = (n: number) =>
-  new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(
-    Math.round(n),
-  );
+  new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    maximumFractionDigits: 0,
+  }).format(Math.round(n));
 
 export const pct = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(0)}%`;
 
@@ -67,7 +76,11 @@ export function parseSale(input: string, products: Product[]): ParsedSale {
 
   const product = findByCode(products, code);
   if (!product)
-    return { ok: false, error: `No existe un producto con el código o clave "${code}".`, unknownCode: code };
+    return {
+      ok: false,
+      error: `No existe un producto con el código o clave "${code}".`,
+      unknownCode: code,
+    };
   if (!product.active) return { ok: false, error: `${product.name} está inactivo.` };
 
   const unitPrice = effectivePrice(product);
@@ -86,7 +99,10 @@ export function parseSale(input: string, products: Product[]): ParsedSale {
 
   const stock = Number(product.stock);
   if (qty > stock)
-    return { ok: false, error: `Stock insuficiente de ${product.name}: quedan ${qtyLabel(stock, product.unit)}.` };
+    return {
+      ok: false,
+      error: `Stock insuficiente de ${product.name}: quedan ${qtyLabel(stock, product.unit)}.`,
+    };
 
   return { ok: true, product, qty, amount };
 }
@@ -135,8 +151,11 @@ export const fmtDate = (d: string | Date) =>
   );
 
 export const fmtDateTime = (d: string | Date) =>
-  new Intl.DateTimeFormat("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(
-    typeof d === "string" ? new Date(d) : d,
-  );
+  new Intl.DateTimeFormat("es-CL", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(typeof d === "string" ? new Date(d) : d);
 
 export const num = (v: string) => Number(String(v).replace(",", "."));

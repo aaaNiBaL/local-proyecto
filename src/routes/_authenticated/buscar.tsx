@@ -36,7 +36,23 @@ function SearchPage() {
       .map((p) => {
         const pl = lots.filter((l) => l.product_id === p.id && l.expires_at);
         const next = pl.sort((a, b) => (a.expires_at! < b.expires_at! ? -1 : 1))[0];
-        return { p, nextExp: next?.expires_at ?? null, st: expiryStatus(next?.expires_at) };
+        const hasExpiredLot = lots.some(
+          (lot) => lot.product_id === p.id && Number(lot.qty) > 0 && expiryStatus(lot.expires_at) === "vencido",
+        );
+        const hasNearExpiryLot = lots.some(
+          (lot) =>
+            lot.product_id === p.id &&
+            Number(lot.qty) > 0 &&
+            ["critico", "proximo"].includes(expiryStatus(lot.expires_at)),
+        );
+        const discountPct = hasNearExpiryLot && !hasExpiredLot ? p.discount_pct : 0;
+        return {
+          p,
+          nextExp: next?.expires_at ?? null,
+          st: expiryStatus(next?.expires_at),
+          discountPct,
+          price: effectivePrice({ ...p, discount_pct: discountPct }),
+        };
       });
   }, [products, categories, lots, q, cat, nature]);
 
@@ -106,7 +122,7 @@ function SearchPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {results.map(({ p, nextExp, st }) => (
+              {results.map(({ p, nextExp, st, price, discountPct }) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
@@ -116,8 +132,8 @@ function SearchPage() {
                   <TableCell className="text-muted-foreground">{categories.find((c) => c.id === p.category_id)?.name ?? "—"}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{natureLabel(p.nature)}</TableCell>
                   <TableCell className="text-right">
-                    {money(effectivePrice(p))}
-                    {p.discount_pct > 0 && <span className="ml-1 text-xs text-accent-foreground/80">-{p.discount_pct}%</span>}
+                    {money(price)}
+                    {discountPct > 0 && <span className="ml-1 text-xs text-accent-foreground/80">-{discountPct}%</span>}
                   </TableCell>
                   <TableCell className="text-right">
                     <Badge variant={Number(p.stock) <= Number(p.min_stock) ? "secondary" : "outline"}>

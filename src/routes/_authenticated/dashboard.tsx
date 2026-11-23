@@ -1,17 +1,36 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CalendarClock, Download, FileText, Package, Tags } from "lucide-react";
-import * as XLSX from "xlsx";
+import {
+  AlertTriangle,
+  CalendarClock,
+  Download,
+  FileText,
+  Package,
+  ShoppingBag,
+  Tags,
+} from "lucide-react";
+import * as XLSX from "xlsx-js-style";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { categoriesQuery, lotsQuery, movementsQuery, productsQuery } from "@/lib/queries";
-import { daysUntil, expiryStatus, fmtDate, money, pct, previousRange, qtyLabel, rangeStart } from "@/lib/inventory";
-import { Kpi } from "@/components/AppShell";
+import {
+  daysUntil,
+  expiryStatus,
+  fmtDate,
+  money,
+  pct,
+  previousRange,
+  qtyLabel,
+  rangeStart,
+} from "@/lib/inventory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Kpi } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
+import { addPdfPageChrome, addPdfSectionHeading, addPdfSummaryCards, pdfColors } from "@/lib/pdf";
+import { createExcelSheet, excelGeneratedAt } from "@/lib/excel";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Invenco" }] }),
@@ -19,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, hasPermission } = useAuth();
   const { data: products = [] } = useQuery(productsQuery);
   const { data: categories = [] } = useQuery(categoriesQuery);
   const { data: lots = [] } = useQuery(lotsQuery);
@@ -38,70 +57,193 @@ function Dashboard() {
     const yTotal = yesterday.reduce((s, m) => s + Number(m.amount), 0);
     const change = yTotal > 0 ? ((tTotal - yTotal) / yTotal) * 100 : tTotal > 0 ? 100 : 0;
     const active = products.filter((p) => p.active);
-    const low = active.filter((p) => Number(p.stock) <= Number(p.min_stock)).sort((a, b) => Number(a.stock) - Number(b.stock));
+    const low = active
+      .filter((p) => Number(p.stock) <= Number(p.min_stock))
+      .sort((a, b) => Number(a.stock) - Number(b.stock));
     const activeCats = new Set(active.map((p) => p.category_id).filter(Boolean)).size;
-    const expiring = lots.filter((l) => ["critico", "proximo", "vencido"].includes(expiryStatus(l.expires_at)));
+    const expiring = lots.filter((l) =>
+      ["critico", "proximo", "vencido"].includes(expiryStatus(l.expires_at)),
+    );
     return { tTotal, tCount: today.length, change, low, activeCats, expiring };
   }, [movements, products, lots]);
 
   const productName = (id: string) => products.find((p) => p.id === id)?.name ?? "—";
 
   const exportDashboardExcel = () => {
-    const rows = stats.low.map((p) => ({
-      Producto: p.name,
-      Stock: Number(p.stock),
-      Minimo: Number(p.min_stock),
-      Precio: Number(p.price),
-      Categoria: categories.find((c) => c.id === p.category_id)?.name ?? "—",
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Reposicion");
+    const generatedAt = excelGeneratedAt();
+    const summary = [
+      { Indicador: "Fecha del reporte", Valor: new Date().toLocaleDateString("es-CL") },
+      { Indicador: "Ventas de hoy (CLP)", Valor: stats.tTotal },
+      { Indicador: "Transacciones de hoy", Valor: stats.tCount },
+      { Indicador: "Variación frente a ayer (%)", Valor: stats.change },
+      { Indicador: "Productos con stock bajo", Valor: stats.low.length },
+      { Indicador: "Lotes próximos a vencer", Valor: stats.expiring.length },
+      { Indicador: "Generado el", Valor: generatedAt },
+    ];
+    XLSX.utils.book_append_sheet(
+      workbook,
+      createExcelSheet(
+        "Resumen del día",
+        `Indicadores del negocio · Generado ${generatedAt}`,
+        summary,
+        [
+          { key: "Indicador", label: "Indicador", width: 34 },
+          { key: "Valor", label: "Resultado", width: 24, format: "#,##0;[Red]-#,##0" },
+        ],
+      ),
+      "Resumen",
+    );
+    XLSX.utils.book_append_sheet(
+      workbook,
+      createExcelSheet(
+        "Reposición urgente",
+        "Productos cuyo stock actual alcanzó o está bajo el mínimo definido.",
+        stats.low.map((p) => ({
+          Producto: p.name,
+          Stock: Number(p.stock),
+          Minimo: Number(p.min_stock),
+          Precio: Number(p.price),
+          Categoria: categories.find((c) => c.id === p.category_id)?.name ?? "—",
+        })),
+        [
+          { key: "Producto", label: "Producto", width: 32 },
+          { key: "Stock", label: "Stock actual", width: 16, format: "0.###" },
+          { key: "Minimo", label: "Stock mínimo", width: 16, format: "0.###" },
+          { key: "Precio", label: "Precio (CLP)", width: 18, format: "#,##0;[Red]-#,##0" },
+          { key: "Categoria", label: "Categoría", width: 24 },
+        ],
+      ),
+      "Reposición",
+    );
+    XLSX.utils.book_append_sheet(
+      workbook,
+      createExcelSheet(
+        "Vencimientos cercanos",
+        "Lotes vencidos o próximos a vencer.",
+        stats.expiring.map((lot) => ({
+          Producto: productName(lot.product_id),
+          Vencimiento: lot.expires_at ? fmtDate(lot.expires_at) : "Sin fecha",
+          Estado: expiryStatus(lot.expires_at),
+        })),
+        [
+          { key: "Producto", label: "Producto", width: 32 },
+          { key: "Vencimiento", label: "Fecha de vencimiento", width: 24 },
+          { key: "Estado", label: "Estado", width: 20 },
+        ],
+      ),
+      "Vencimientos",
+    );
     XLSX.writeFile(workbook, "dashboard-reposicion.xlsx");
   };
 
   const exportDailyPdf = () => {
     const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text("Cierre diario", 14, 18);
-    doc.setFontSize(10);
-    doc.text(`Ventas: ${money(stats.tTotal)} · ${stats.tCount} ventas`, 14, 30);
-    doc.text(`Cambio vs ayer: ${pct(stats.change)}`, 14, 37);
+    const reportDate = new Intl.DateTimeFormat("es-CL", { dateStyle: "long" }).format(new Date());
+    const tableStyles = {
+      theme: "grid" as const,
+      margin: { top: 40, bottom: 20, left: 14, right: 14 },
+      styles: {
+        font: "helvetica",
+        fontSize: 8,
+        cellPadding: 3,
+        textColor: pdfColors.text,
+        lineColor: pdfColors.border,
+        lineWidth: 0.15,
+      },
+      headStyles: {
+        fillColor: pdfColors.primary,
+        textColor: [255, 255, 255] as [number, number, number],
+        fontStyle: "bold" as const,
+      },
+      alternateRowStyles: { fillColor: pdfColors.alternate },
+    };
+
+    addPdfSummaryCards(doc, 40, [
+      { label: "Ventas de hoy", value: money(stats.tTotal) },
+      { label: "Transacciones", value: String(stats.tCount) },
+      { label: "Variación vs. ayer", value: pct(stats.change) },
+      { label: "Productos con stock bajo", value: String(stats.low.length) },
+    ]);
+
+    let y = addPdfSectionHeading(
+      doc,
+      "Reposición urgente",
+      "Productos cuyo stock actual alcanzó o está bajo el mínimo definido.",
+      72,
+    );
 
     autoTable(doc, {
-      startY: 46,
+      ...tableStyles,
+      startY: y,
       head: [["Producto", "Stock", "Mínimo"]],
-      body: stats.low.slice(0, 10).map((p) => [p.name, qtyLabel(Number(p.stock), p.unit), qtyLabel(Number(p.min_stock), p.unit)]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [25, 118, 210] },
+      body: stats.low.length
+        ? stats.low
+            .slice(0, 10)
+            .map((p) => [
+              p.name,
+              qtyLabel(Number(p.stock), p.unit),
+              qtyLabel(Number(p.min_stock), p.unit),
+            ])
+        : [["No hay productos que requieran reposición.", "", ""]],
     });
 
+    y = doc.lastAutoTable.finalY + 12;
+    if (y > doc.internal.pageSize.getHeight() - 48) {
+      doc.addPage();
+      y = 42;
+    }
+    y = addPdfSectionHeading(
+      doc,
+      "Vencimientos cercanos",
+      "Lotes vencidos o próximos a vencer.",
+      y,
+    );
     autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 10,
+      ...tableStyles,
+      startY: y,
       head: [["Lote", "Vence", "Estado"]],
-      body: stats.expiring.slice(0, 10).map((l) => [productName(l.product_id), l.expires_at ? fmtDate(l.expires_at) : "—", expiryStatus(l.expires_at)]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [220, 53, 69] },
+      body: stats.expiring.length
+        ? stats.expiring
+            .slice(0, 10)
+            .map((l) => [
+              productName(l.product_id),
+              l.expires_at ? fmtDate(l.expires_at) : "—",
+              expiryStatus(l.expires_at),
+            ])
+        : [["No hay lotes vencidos ni próximos a vencer.", "", ""]],
     });
 
+    addPdfPageChrome(doc, "Cierre diario", `Resumen del ${reportDate}`);
     doc.save("cierre-diario.pdf");
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={exportDashboardExcel}>
-          <Download className="size-4" /> Excel
-        </Button>
-        <Button variant="outline" onClick={exportDailyPdf}>
-          <FileText className="size-4" /> PDF diario
-        </Button>
+    <div className="w-full space-y-6 pb-6">
+      <div className="relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm sm:p-7">
+        <div className="pointer-events-none absolute -right-10 -top-16 size-56 rounded-full bg-primary/5 blur-3xl" />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Resumen de ventas</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Revisa ingresos, ganancias y movimiento de productos en un solo lugar.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={exportDashboardExcel}>
+              <Download className="size-4" /> Exportar Excel
+            </Button>
+            <Button variant="outline" onClick={exportDailyPdf}>
+              <FileText className="size-4" /> Exportar PDF
+            </Button>
+          </div>
+        </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi
           label="Ventas de hoy"
           value={money(stats.tTotal)}
+          icon={ShoppingBag}
           sub={
             <span className={stats.change >= 0 ? "text-primary" : "text-destructive"}>
               {pct(stats.change)} vs. ayer · {stats.tCount} ventas
@@ -109,18 +251,25 @@ function Dashboard() {
           }
           tone="good"
         />
-        <Kpi label="Productos registrados" value={products.length} sub={`${stats.activeCats} de ${categories.length} categorías activas`} />
+        <Kpi
+          label="Productos registrados"
+          value={products.length}
+          icon={Package}
+          sub={`${stats.activeCats} de ${categories.length} categorías activas`}
+        />
         <Kpi
           label="Stock mínimo"
           value={stats.low.length}
-          sub="requieren reposición"
+          icon={AlertTriangle}
           tone={stats.low.length > 0 ? "warn" : "default"}
+          sub="requieren reposición"
         />
         <Kpi
           label="Próximos a vencer"
           value={stats.expiring.length}
-          sub="lotes en alerta"
+          icon={CalendarClock}
           tone={stats.expiring.length > 0 ? "danger" : "default"}
+          sub="lotes en alerta"
         />
       </div>
 
@@ -130,7 +279,7 @@ function Dashboard() {
             <CardTitle className="flex items-center gap-2 text-base">
               <AlertTriangle className="size-4 text-accent" /> Reposición urgente
             </CardTitle>
-            {isAdmin && (
+            {hasPermission("stock_manage") && (
               <Button asChild variant="ghost" size="sm">
                 <Link to="/movimientos">Registrar entrada</Link>
               </Button>
@@ -145,7 +294,9 @@ function Dashboard() {
                   <li key={p.id} className="flex items-center justify-between py-2 text-sm">
                     <div>
                       <p className="font-medium">{p.name}</p>
-                      <p className="text-xs text-muted-foreground">mín. {qtyLabel(Number(p.min_stock), p.unit)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        mín. {qtyLabel(Number(p.min_stock), p.unit)}
+                      </p>
                     </div>
                     <Badge variant={Number(p.stock) <= 0 ? "destructive" : "secondary"}>
                       {qtyLabel(Number(p.stock), p.unit)}
@@ -162,7 +313,7 @@ function Dashboard() {
             <CardTitle className="flex items-center gap-2 text-base">
               <CalendarClock className="size-4 text-destructive" /> Vencimientos cercanos
             </CardTitle>
-            {isAdmin && (
+            {hasPermission("expiry_manage") && (
               <Button asChild variant="ghost" size="sm">
                 <Link to="/vencimientos">Gestionar</Link>
               </Button>
@@ -181,7 +332,8 @@ function Dashboard() {
                       <div>
                         <p className="font-medium">{productName(l.product_id)}</p>
                         <p className="text-xs text-muted-foreground">
-                          {Number(l.qty)} restantes · vence {l.expires_at ? fmtDate(l.expires_at) : "—"}
+                          {Number(l.qty)} restantes · vence{" "}
+                          {l.expires_at ? fmtDate(l.expires_at) : "—"}
                         </p>
                       </div>
                       <Badge variant={st === "proximo" ? "secondary" : "destructive"}>

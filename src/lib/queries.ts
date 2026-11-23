@@ -1,18 +1,33 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Category, Lot, Movement, Product, Profile, Promotion, Settings } from "./inventory";
+import type {
+  AppRole,
+  Category,
+  InventoryAdjustment,
+  InventoryStockAudit,
+  Lot,
+  Movement,
+  Product,
+  Profile,
+  Promotion,
+  SalePayment,
+  Settings,
+} from "./inventory";
 
 export const qk = {
   products: ["products"] as const,
+  inventoryAdjustments: ["inventory-adjustments"] as const,
+  inventoryStockAudit: ["inventory-stock-audit"] as const,
   promotions: ["promotions"] as const,
   categories: ["categories"] as const,
   lots: ["lots"] as const,
   movements: (days: number) => ["movements", days] as const,
+  salePayments: (days: number) => ["sale-payments", days] as const,
   settings: ["settings"] as const,
   profiles: ["profiles"] as const,
 };
 
-const unwrap = <T,>(r: { data: T | null; error: { message: string } | null }): T => {
+const unwrap = <T>(r: { data: T | null; error: { message: string } | null }): T => {
   if (r.error) throw new Error(r.error.message);
   return r.data as T;
 };
@@ -22,6 +37,42 @@ export const productsQuery = queryOptions({
   queryFn: async (): Promise<Product[]> =>
     unwrap(await supabase.from("products").select("*").order("name")),
 });
+
+export const inventoryAdjustmentsQuery = (days = 30) =>
+  queryOptions({
+    queryKey: [...qk.inventoryAdjustments, days],
+    queryFn: async (): Promise<InventoryAdjustment[]> => {
+      const from = new Date();
+      from.setDate(from.getDate() - days);
+      from.setHours(0, 0, 0, 0);
+      return unwrap(
+        await supabase
+          .from("inventory_adjustments")
+          .select("*")
+          .gte("created_at", from.toISOString())
+          .order("created_at", { ascending: false })
+          .limit(2000),
+      );
+    },
+  });
+
+export const inventoryStockAuditQuery = (days = 30) =>
+  queryOptions({
+    queryKey: [...qk.inventoryStockAudit, days],
+    queryFn: async (): Promise<InventoryStockAudit[]> => {
+      const from = new Date();
+      from.setDate(from.getDate() - days);
+      from.setHours(0, 0, 0, 0);
+      return unwrap(
+        await supabase
+          .from("inventory_stock_audit")
+          .select("*")
+          .gte("created_at", from.toISOString())
+          .order("created_at", { ascending: false })
+          .limit(2000),
+      );
+    },
+  });
 
 export const promotionsQuery = queryOptions({
   queryKey: qk.promotions,
@@ -38,7 +89,13 @@ export const categoriesQuery = queryOptions({
 export const lotsQuery = queryOptions({
   queryKey: qk.lots,
   queryFn: async (): Promise<Lot[]> =>
-    unwrap(await supabase.from("lots").select("*").gt("qty", 0).order("expires_at", { nullsFirst: false })),
+    unwrap(
+      await supabase
+        .from("lots")
+        .select("*")
+        .gt("qty", 0)
+        .order("expires_at", { nullsFirst: false }),
+    ),
 });
 
 export const movementsQuery = (days = 60) =>
@@ -59,6 +116,23 @@ export const movementsQuery = (days = 60) =>
     },
   });
 
+export const salePaymentsQuery = (days = 60) =>
+  queryOptions({
+    queryKey: qk.salePayments(days),
+    queryFn: async (): Promise<SalePayment[]> => {
+      const from = new Date();
+      from.setDate(from.getDate() - days);
+      from.setHours(0, 0, 0, 0);
+      return unwrap(
+        await supabase
+          .from("sale_payments")
+          .select("*")
+          .gte("created_at", from.toISOString())
+          .order("created_at", { ascending: false }),
+      );
+    },
+  });
+
 export const settingsQuery = queryOptions({
   queryKey: qk.settings,
   queryFn: async (): Promise<Settings> =>
@@ -67,7 +141,7 @@ export const settingsQuery = queryOptions({
 
 export const profilesQuery = queryOptions({
   queryKey: qk.profiles,
-  queryFn: async (): Promise<(Profile & { role: "admin" | "cajero" | null })[]> => {
+  queryFn: async (): Promise<(Profile & { role: AppRole | null })[]> => {
     const [profiles, roles] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at"),
       supabase.from("user_roles").select("user_id, role"),

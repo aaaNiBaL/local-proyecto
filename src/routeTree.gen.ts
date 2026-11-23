@@ -21,6 +21,7 @@ import { Route as AuthenticatedReportesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedVencimientosRouteImport } from './routes/_authenticated/vencimientos'
 import { Route as AuthenticatedVenderRouteImport } from './routes/_authenticated/vender'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiAdminUsersRouteImport } from './routes/api/admin/users'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -85,6 +86,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminUsersRoute = ApiAdminUsersRouteImport.update({
+  id: '/api/admin/users',
+  path: '/api/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/vencimientos': typeof AuthenticatedVencimientosRoute
   '/vender': typeof AuthenticatedVenderRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/admin/users': typeof ApiAdminUsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/vencimientos': typeof AuthenticatedVencimientosRoute
   '/vender': typeof AuthenticatedVenderRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/admin/users': typeof ApiAdminUsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/_authenticated/vencimientos': typeof AuthenticatedVencimientosRoute
   '/_authenticated/vender': typeof AuthenticatedVenderRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/admin/users': typeof ApiAdminUsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/vencimientos'
     | '/vender'
     | '/api/chat'
+    | '/api/admin/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/vencimientos'
     | '/vender'
     | '/api/chat'
+    | '/api/admin/users'
   id:
     | '__root__'
     | '/'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/_authenticated/vencimientos'
     | '/_authenticated/vender'
     | '/api/chat'
+    | '/api/admin/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -175,6 +187,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiAdminUsersRoute: typeof ApiAdminUsersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -263,6 +276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/users': {
+      id: '/api/admin/users'
+      path: '/api/admin/users'
+      fullPath: '/api/admin/users'
+      preLoaderRoute: typeof ApiAdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -296,6 +316,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiAdminUsersRoute: ApiAdminUsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
